@@ -1,0 +1,13 @@
+{
+  "projectId": "72581982",
+  "functions": {
+    "pos-webhook": {
+      "hasChanged": false,
+      "hash": "fedb9dbd4a6c25b12d6b6f151d305d28ae4450d1b5c5df4d1e53192be5711e9a"
+    },
+    "whatsapp-alerts": {
+      "hasChanged": false,
+      "hash": "65cdb78e34052396135a3c611cc8bfd26c1cf4f268c056ef257000002571a401"
+    }
+  }
+}
