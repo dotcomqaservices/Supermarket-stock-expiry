@@ -1,0 +1,926 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Tenant-isolated AI Stock supermarket inventory and expiry management API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: stores
+    description: Tenant onboarding and store management
+  - name: inventory
+    description: Store-scoped product inventory
+  - name: staff
+    description: Authorized staff management and audit trail
+  - name: platform
+    description: Platform-wide super admin operations
+  - name: whatsapp
+    description: Store WhatsApp configuration and inbound webhooks
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /me:
+    get:
+      operationId: getMe
+      tags: [stores]
+      summary: Get the signed-in user and store memberships
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /stores:
+    get:
+      operationId: listStores
+      tags: [stores]
+      summary: List stores available to the signed-in user
+      responses:
+        "200":
+          description: Stores and the current user's role in each
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StoreMembership"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createStore
+      tags: [stores]
+      summary: Register a store and assign the Starter Plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StoreCreateInput"
+      responses:
+        "201":
+          description: Store created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoreMembership"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /stores/{storeId}:
+    parameters:
+      - $ref: "#/components/parameters/StoreId"
+    get:
+      operationId: getStore
+      tags: [stores]
+      summary: Get a store the user can access
+      responses:
+        "200":
+          description: Store details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Store"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateStore
+      tags: [stores]
+      summary: Update store details
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StoreUpdateInput"
+      responses:
+        "200":
+          description: Updated store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Store"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /stores/{storeId}/dashboard:
+    parameters:
+      - $ref: "#/components/parameters/StoreId"
+    get:
+      operationId: getDashboard
+      tags: [stores]
+      summary: Get expiry, inventory, and activity overview
+      responses:
+        "200":
+          description: Store dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /stores/{storeId}/products:
+    parameters:
+      - $ref: "#/components/parameters/StoreId"
+    get:
+      operationId: listProducts
+      tags: [inventory]
+      summary: List and filter store inventory
+      responses:
+        "200":
+          description: Product inventory
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: createProduct
+      tags: [inventory]
+      summary: Add a product batch to store inventory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+      responses:
+        "201":
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /stores/{storeId}/products/{productId}:
+    parameters:
+      - $ref: "#/components/parameters/StoreId"
+      - $ref: "#/components/parameters/ProductId"
+    get:
+      operationId: getProduct
+      tags: [inventory]
+      summary: Get a product batch
+      responses:
+        "200":
+          description: Product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateProduct
+      tags: [inventory]
+      summary: Update a product batch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductUpdateInput"
+      responses:
+        "200":
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteProduct
+      tags: [inventory]
+      summary: Remove a product batch
+      responses:
+        "204":
+          description: Product deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /stores/{storeId}/staff:
+    parameters:
+      - $ref: "#/components/parameters/StoreId"
+    get:
+      operationId: listStaff
+      tags: [staff]
+      summary: List registered staff
+      responses:
+        "200":
+          description: Staff members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StaffMember"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: createStaff
+      tags: [staff]
+      summary: Register an authorized staff member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffInput"
+      responses:
+        "201":
+          description: Staff member created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffMember"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /stores/{storeId}/staff/{staffId}:
+    parameters:
+      - $ref: "#/components/parameters/StoreId"
+      - $ref: "#/components/parameters/StaffId"
+    patch:
+      operationId: updateStaff
+      tags: [staff]
+      summary: Update or deactivate a staff member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffUpdateInput"
+      responses:
+        "200":
+          description: Updated staff member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffMember"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteStaff
+      tags: [staff]
+      summary: Remove a staff member and retain the audit record
+      responses:
+        "204":
+          description: Staff member removed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /stores/{storeId}/audit-logs:
+    parameters:
+      - $ref: "#/components/parameters/StoreId"
+    get:
+      operationId: listAuditLogs
+      tags: [staff]
+      summary: View the immutable store audit trail
+      responses:
+        "200":
+          description: Audit records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditLog"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /stores/{storeId}/security-alerts:
+    parameters:
+      - $ref: "#/components/parameters/StoreId"
+    get:
+      operationId: listSecurityAlerts
+      tags: [staff]
+      summary: Review unauthorized WhatsApp update attempts
+      responses:
+        "200":
+          description: Security alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SecurityAlert"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /stores/{storeId}/whatsapp:
+    parameters:
+      - $ref: "#/components/parameters/StoreId"
+    get:
+      operationId: getWhatsAppConnection
+      tags: [whatsapp]
+      summary: Get WhatsApp connection status without exposing credentials
+      responses:
+        "200":
+          description: WhatsApp setup status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhatsAppConnection"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      operationId: saveWhatsAppConnection
+      tags: [whatsapp]
+      summary: Connect or update a store's WhatsApp Business account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhatsAppConnectionInput"
+      responses:
+        "200":
+          description: Saved WhatsApp connection status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhatsAppConnection"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /configuration:
+    get:
+      operationId: getPublicConfiguration
+      tags: [settings]
+      security: []
+      responses:
+        "200":
+          description: Public service configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemConfiguration"
+  /admin/settings:
+    get:
+      operationId: getSystemSettings
+      tags: [settings]
+      responses:
+        "200":
+          description: System-wide configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemConfiguration"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    put:
+      operationId: updateSystemSettings
+      tags: [settings]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SystemConfiguration"
+      responses:
+        "200":
+          description: Updated system configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemConfiguration"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /admin/overview:
+    get:
+      operationId: getPlatformOverview
+      tags: [platform]
+      summary: Get platform-wide store and inventory metrics
+      responses:
+        "200":
+          description: Platform summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformOverview"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /admin/stores:
+    get:
+      operationId: listAllStores
+      tags: [platform]
+      summary: List all tenant stores for super admins
+      responses:
+        "200":
+          description: Platform store list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlatformStore"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /admin/users:
+    get:
+      operationId: listPlatformUsers
+      tags: [platform]
+      summary: List users and their platform privileges
+      responses:
+        "200":
+          description: Store users and current platform roles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlatformUser"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /admin/users/{userId}:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema: { type: string }
+    patch:
+      operationId: updatePlatformUserRole
+      tags: [platform]
+      summary: Grant or remove super admin privileges
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlatformUserRoleInput"
+      responses:
+        "200":
+          description: Updated platform user role
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformUser"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /admin/stores/{storeId}/plan:
+    parameters:
+      - $ref: "#/components/parameters/StoreId"
+    patch:
+      operationId: updateStorePlan
+      tags: [platform]
+      summary: Change a tenant subscription tier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlanUpdateInput"
+      responses:
+        "200":
+          description: Updated tenant subscription
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformStore"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /webhooks/whatsapp:
+    get:
+      operationId: verifyWhatsAppWebhook
+      tags: [whatsapp]
+      summary: Verify the official Meta WhatsApp webhook
+      parameters:
+        - name: hub.mode
+          in: query
+          required: true
+          schema: { type: string }
+        - name: hub.verify_token
+          in: query
+          required: true
+          schema: { type: string }
+        - name: hub.challenge
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Webhook challenge
+          content:
+            text/plain:
+              schema: { type: string }
+        "403":
+          description: Invalid verification token
+        "503":
+          description: Webhook verification is not configured
+    post:
+      operationId: receiveWhatsAppWebhook
+      tags: [whatsapp]
+      summary: Receive and authorize incoming stock update messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhatsAppWebhookPayload"
+      responses:
+        "200":
+          description: Webhook accepted or safely ignored
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookAck"
+        "401":
+          description: Invalid Meta webhook signature
+        "503":
+          description: Webhook verification is not configured
+components:
+  parameters:
+    StoreId:
+      name: storeId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ProductId:
+      name: productId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    StaffId:
+      name: staffId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Sign-in required
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    ErrorResponse:
+      type: object
+      properties:
+        error: { type: string }
+      required: [error]
+    SystemConfiguration:
+      type: object
+      properties:
+        signupEnabled: { type: boolean }
+        serviceNotice: { type: string, maxLength: 280 }
+        supportEmail: { type: string, maxLength: 320 }
+      required: [signupEnabled, serviceNotice, supportEmail]
+    StoreCreateInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 2 }
+        branchLabel: { type: string, minLength: 1 }
+        address: { type: string, minLength: 3 }
+        contactName: { type: string, minLength: 2 }
+        contactPhone: { type: string, minLength: 5 }
+        contactEmail: { type: string, format: email }
+        whatsappPhone: { type: string, minLength: 5 }
+      required: [name, branchLabel, address, contactName, contactPhone, contactEmail, whatsappPhone]
+    StoreUpdateInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 2 }
+        branchLabel: { type: string, minLength: 1 }
+        address: { type: string, minLength: 3 }
+        contactName: { type: string, minLength: 2 }
+        contactPhone: { type: string, minLength: 5 }
+        contactEmail: { type: string, format: email }
+        whatsappPhone: { type: string, minLength: 5 }
+    Store:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        branchLabel: { type: string }
+        address: { type: string }
+        contactName: { type: string }
+        contactPhone: { type: string }
+        contactEmail: { type: string, format: email }
+        whatsappPhone: { type: string }
+        subscriptionPlan: { type: string }
+        subscriptionStatus: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, name, branchLabel, address, contactName, contactPhone, contactEmail, whatsappPhone, subscriptionPlan, subscriptionStatus, createdAt]
+    StoreMembership:
+      type: object
+      properties:
+        store:
+          $ref: "#/components/schemas/Store"
+        role:
+          type: string
+          enum: [store_admin, staff]
+      required: [store, role]
+    Me:
+      type: object
+      properties:
+        userId: { type: string }
+        email: { type: ["string", "null"] }
+        name: { type: ["string", "null"] }
+        platformRole:
+          type: string
+          enum: [user, super_admin]
+        memberships:
+          type: array
+          items:
+            $ref: "#/components/schemas/StoreMembership"
+      required: [userId, email, name, platformRole, memberships]
+    DashboardSummary:
+      type: object
+      properties:
+        totalProducts: { type: integer }
+        totalUnits: { type: integer }
+        expiringSoonCount: { type: integer }
+        expiredCount: { type: integer }
+        safeCount: { type: integer }
+        lowStockCount: { type: integer }
+        estimatedInventoryValue: { type: number, format: double }
+        recentActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditLog"
+        expiryBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExpiryBucket"
+      required: [totalProducts, totalUnits, expiringSoonCount, expiredCount, safeCount, lowStockCount, estimatedInventoryValue, recentActivity, expiryBreakdown]
+    ExpiryBucket:
+      type: object
+      properties:
+        label: { type: string }
+        count: { type: integer }
+      required: [label, count]
+    ProductInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        category: { type: string, minLength: 1 }
+        batchNumber: { type: string, minLength: 1 }
+        quantity: { type: integer, minimum: 0 }
+        costPrice: { type: number, format: double, minimum: 0 }
+        sellingPrice: { type: number, format: double, minimum: 0 }
+        expiryDate: { type: string, format: date }
+      required: [name, category, batchNumber, quantity, costPrice, sellingPrice, expiryDate]
+    ProductUpdateInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        category: { type: string, minLength: 1 }
+        batchNumber: { type: string, minLength: 1 }
+        quantity: { type: integer, minimum: 0 }
+        costPrice: { type: number, format: double, minimum: 0 }
+        sellingPrice: { type: number, format: double, minimum: 0 }
+        expiryDate: { type: string, format: date }
+    Product:
+      allOf:
+        - $ref: "#/components/schemas/ProductInput"
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+            expiryStatus:
+              type: string
+              enum: [expiring_soon, expired, safe]
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+          required: [id, expiryStatus, createdAt, updatedAt]
+    StaffInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 2 }
+        phoneNumber: { type: string, minLength: 5 }
+        contactDetails: { type: string }
+        active: { type: boolean, default: true }
+      required: [name, phoneNumber, contactDetails]
+    StaffUpdateInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 2 }
+        phoneNumber: { type: string, minLength: 5 }
+        contactDetails: { type: string }
+        active: { type: boolean }
+    StaffMember:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        phoneNumber: { type: string }
+        contactDetails: { type: string }
+        active: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required: [id, name, phoneNumber, contactDetails, active, createdAt, updatedAt]
+    AuditLog:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        action: { type: string }
+        targetType: { type: string }
+        targetId: { type: ["string", "null"] }
+        targetLabel: { type: string }
+        actorUserId: { type: string }
+        actorName: { type: string }
+        details: { type: object, additionalProperties: true }
+        createdAt: { type: string, format: date-time }
+      required: [id, action, targetType, targetId, targetLabel, actorUserId, actorName, details, createdAt]
+    SecurityAlert:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        senderPhone: { type: string }
+        reason: { type: string }
+        messagePreview: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, senderPhone, reason, messagePreview, createdAt]
+    WhatsAppConnectionInput:
+      type: object
+      properties:
+        phoneNumber: { type: string, minLength: 5 }
+        phoneNumberId: { type: string, pattern: "^[0-9]+$" }
+        wabaId: { type: string, pattern: "^[0-9]+$" }
+        accessToken: { type: string, minLength: 20 }
+      required: [phoneNumber, phoneNumberId, wabaId, accessToken]
+    WhatsAppConnection:
+      type: object
+      properties:
+        connected: { type: boolean }
+        phoneNumber: { type: ["string", "null"] }
+        phoneNumberId: { type: ["string", "null"] }
+        wabaId: { type: ["string", "null"] }
+        status: { type: string, enum: [not_connected, awaiting_webhook_config, connected] }
+        webhookReady: { type: boolean }
+        lastConnectedAt: { type: ["string", "null"], format: date-time }
+      required: [connected, phoneNumber, phoneNumberId, wabaId, status, webhookReady, lastConnectedAt]
+    PlanUpdateInput:
+      type: object
+      properties:
+        subscriptionPlan:
+          type: string
+          enum: [Starter Plan, Growth Plan, Enterprise Plan]
+      required: [subscriptionPlan]
+    PlatformOverview:
+      type: object
+      properties:
+        totalStores: { type: integer }
+        activeStores: { type: integer }
+        totalProducts: { type: integer }
+        expiringSoonCount: { type: integer }
+        expiredCount: { type: integer }
+        planBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlanBreakdown"
+      required: [totalStores, activeStores, totalProducts, expiringSoonCount, expiredCount, planBreakdown]
+    PlanBreakdown:
+      type: object
+      properties:
+        plan: { type: string }
+        storeCount: { type: integer }
+      required: [plan, storeCount]
+    PlatformStore:
+      allOf:
+        - $ref: "#/components/schemas/Store"
+        - type: object
+          properties:
+            productCount: { type: integer }
+            staffCount: { type: integer }
+          required: [productCount, staffCount]
+    PlatformUserRoleInput:
+      type: object
+      properties:
+        platformRole:
+          type: string
+          enum: [user, super_admin]
+      required: [platformRole]
+    PlatformUser:
+      type: object
+      properties:
+        userId: { type: string }
+        email: { type: ["string", "null"] }
+        name: { type: ["string", "null"] }
+        platformRole:
+          type: string
+          enum: [user, super_admin]
+        storeMemberships:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlatformUserMembership"
+      required: [userId, email, name, platformRole, storeMemberships]
+    PlatformUserMembership:
+      type: object
+      properties:
+        storeId: { type: string, format: uuid }
+        storeName: { type: string }
+        role: { type: string }
+      required: [storeId, storeName, role]
+    WhatsAppWebhookPayload:
+      type: object
+      additionalProperties: true
+    WebhookAck:
+      type: object
+      properties:
+        received: { type: boolean }
+      required: [received]
+
