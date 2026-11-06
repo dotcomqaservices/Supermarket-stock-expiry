@@ -1,3 +1,5 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import express, { type Express } from "express";
 import pinoHttp from "pino-http";
 import { clerkMiddleware } from "@clerk/express";
@@ -47,5 +49,31 @@ app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
+
+if (process.env.NODE_ENV === "production") {
+  const webDistDir =
+    process.env.WEB_DIST_DIR ??
+    path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../ai-stock/dist/public",
+    );
+
+  app.use(express.static(webDistDir, { index: false }));
+  app.use((req, res, next) => {
+    if (
+      req.method !== "GET" ||
+      req.path === "/api" ||
+      req.path.startsWith("/api/") ||
+      path.extname(req.path)
+    ) {
+      next();
+      return;
+    }
+
+    res.sendFile(path.join(webDistDir, "index.html"), (err) => {
+      if (err) next(err);
+    });
+  });
+}
 
 export default app;

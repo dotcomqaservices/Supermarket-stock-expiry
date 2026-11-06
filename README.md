@@ -41,6 +41,21 @@ Node.js 24+, pnpm, TypeScript, React/Vite, Tailwind CSS, Lucide, Express, Postgr
 
 Replit routes `/api` to Express and `/` to the web application. Outside Replit, configure an equivalent reverse proxy: `/api` to the API service and all other routes to the frontend, including SPA fallback. For production, serve the built frontend rather than Vite's development server.
 
+### Coolify single-resource deployment
+
+The root package pins pnpm to the version used to generate and verify the lockfile. Coolify/Railpack can deploy the workspace as one service: the production API server also serves the built frontend and its SPA routes.
+
+Configure the Coolify application with:
+
+- Repository branch: `main`
+- Base directory: `/`
+- Build command: `pnpm run build`
+- Start command: `pnpm start`
+- Exposed container port: `8080`
+- Health-check path: `/api/healthz`
+
+Set the server variables from `.env.example` in Coolify. Make `VITE_CLERK_PUBLISHABLE_KEY` available during the build because it is embedded in the frontend bundle. Keep database, Clerk secret, session, and WhatsApp secrets available at runtime; never commit their values. The server defaults to port `8080`, and the frontend build defaults to the root URL path.
+
 ### First super admin
 
 Sign up, then set `SUPER_ADMIN_USER_IDS` to the account's Clerk user ID or set `SUPER_ADMIN_EMAILS` to its verified primary email. Both accept comma-separated values. Restart the API after configuration changes. Do not automatically grant admin access to the first public registrant.
