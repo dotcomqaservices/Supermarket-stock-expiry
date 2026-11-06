@@ -3,12 +3,17 @@
   "version": "0.0.0",
   "license": "MIT",
   "packageManager": "pnpm@10.26.1",
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": "10.26.1"
+  },
   "scripts": {
     "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "start": "NODE_ENV=production PORT=${PORT:-8080} pnpm --filter @workspace/api-server run start",
     "typecheck:libs": "tsc --build",
-    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
+    "doctor": "node -e \"const ua = process.env.npm_config_user_agent || ''; if (!ua.startsWith('pnpm/')) { console.error('This workspace requires pnpm. Run: pnpm install'); process.exit(1); } console.log('Workspace is using pnpm: ' + ua);\""
   },
   "private": true,
   "dependencies": {
