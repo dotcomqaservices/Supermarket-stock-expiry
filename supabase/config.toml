@@ -1,5 +1,0 @@
-[functions.pos-webhook]
-verify_jwt = false
-
-[functions.whatsapp-alerts]
-verify_jwt = false

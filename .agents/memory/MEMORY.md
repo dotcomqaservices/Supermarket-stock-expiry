@@ -1,0 +1,2 @@
+- [Orval query parameter types](orval-query-parameter-types.md) — rerun generated type checks when adding query parameters; the current generator can emit duplicate `Params` exports.
+- [GitHub source control](github-source-control.md) — native Git access can work even when the source-control connector exposes no usable API connection.

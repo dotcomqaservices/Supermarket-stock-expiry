@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "AI Stock"
+description = "AI Stock by dotcom.qa services is a multi-tenant supermarket inventory and expiry management app with role-based staff access, auditable operations, and WhatsApp stock updates."
+version = "1.0.0"
+id = "artifacts/ai-stock"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25572
+
+[services.development]
+run = "pnpm --filter @workspace/ai-stock run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ai-stock", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/ai-stock/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25572"
+BASE_PATH = "/"
